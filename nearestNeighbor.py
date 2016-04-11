@@ -33,7 +33,7 @@ def getData():
 
 if __name__ == "__main__": 
     # We have 
-    knn = KNeighborsClassifier(n_neighbors = 3) # use 1-nearest neighbors, arbitrary choice
+    knn = KNeighborsClassifier(n_neighbors = 3) 
     data = getData()
     vals = data[0]
     print(len(vals))
