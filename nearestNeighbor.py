@@ -6,7 +6,7 @@ from sklearn.neighbors import KNeighborsClassifier
 
 def getData():
     # Requires $limit clause to go over 1000 entries
-    numberOfEntries = "$limit=1000"
+    numberOfEntries = "$limit=2000"
     selectClause = "$select=npi,total_claim_count,drug_name,specialty_desc"
     query = "https://data.cms.gov/resource/hffa-2yrd.json?" + selectClause + "&" + numberOfEntries 
     dataFrame = pd.read_json(query)
@@ -14,6 +14,7 @@ def getData():
     crosstab = pd.crosstab([dataFrame["npi"], dataFrame["specialty_desc"]], dataFrame["drug_name"])
     drugList = crosstab.keys() # list of all drugs. 1 if doctor has prescribed it 0 if not
    
+    npi = [] # array of npi's
     data = [] # each entry is an array of drugs prescribed
     labels = [] # each entry is either 1 for Psychiatrist, 0 if not.
     
@@ -26,7 +27,8 @@ def getData():
             labels.append("1")
         else:
             labels.append("0")
-    return [data, labels]
+        npi.append(index[0])
+    return [npi, data, labels]
 
 # 4-fold cross-validation 
 def crossvalidate(data, labels, k):
@@ -68,6 +70,23 @@ def findK(data, labels):
 
 if __name__ == "__main__": 
     data = getData()
-    vals = data[0]
-    labels = data[1]
+    npi = data[0]
+    vals = data[1]
+    labels = data[2]
     k = findK(vals, labels)
+    
+    # find incorrectly labeled providers' npi with K value found
+    quarter = int(math.floor(len(vals) * .25))
+    mistakes = [] # will hold the npi's of the inccorrect values
+    knn = KNeighborsClassifier(n_neighbors = 1)
+    trainingData = vals[quarter:]
+    trainingLabels = labels[quarter:]
+    testData = vals[0: quarter]
+    testLabels = labels[0: quarter]
+    npi = npi[0: quarter]
+    knn.fit(trainingData, trainingLabels)
+    for y in range(len(testData)):
+            prediction = knn.predict([vals[y]])
+            if (prediction != labels[y]):
+                mistakes.append(npi[y])
+    print(mistakes)
