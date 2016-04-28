@@ -6,7 +6,7 @@ from sklearn.neighbors import KNeighborsClassifier
 
 def getData():
     # Requires $limit clause to go over 1000 entries
-    numberOfEntries = "$limit=2000"
+    numberOfEntries = "$limit=1000"
     selectClause = "$select=npi,total_claim_count,drug_name,specialty_desc"
     query = "https://data.cms.gov/resource/hffa-2yrd.json?" + selectClause + "&" + numberOfEntries 
     dataFrame = pd.read_json(query)
@@ -28,7 +28,7 @@ def getData():
         else:
             labels.append("0")
         npi.append(index[0])
-    return [npi, data, labels]
+    return [npi, data, labels, dataFrame]
 
 # 4-fold cross-validation 
 def crossvalidate(data, labels, k):
@@ -66,13 +66,12 @@ def findK(data, labels):
         print("Average accuracy for k value of " + str(k) + " is: " + str(accuracy))
     return optimalK
 
-# name of person, npi, specialty. Put into a dataframe. who looks like psychiatrist but isn't 
-
 if __name__ == "__main__": 
     data = getData()
     npi = data[0]
     vals = data[1]
     labels = data[2]
+    dataframe = data[3]
     k = findK(vals, labels)
     
     # find incorrectly labeled providers' npi with K value found
@@ -89,4 +88,8 @@ if __name__ == "__main__":
             prediction = knn.predict([vals[y]])
             if (prediction != labels[y]):
                 mistakes.append(npi[y])
-    print(mistakes)
+            # if (prediction != labels[y] and prediction == 1):  
+            #   mistakes.append(npi[y])
+            
+    mistakeDataframe = dataframe[dataframe['npi'].isin(mistakes)]
+    print(mistakeDataframe)
